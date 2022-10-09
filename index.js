@@ -2,27 +2,41 @@ const axios = require('axios')
 const cors = require('cors')
 const {auth, resolver, loaders} = require('@iden3/js-iden3-auth')
 const express = require('express');
-
+const http = require('http');
+const getRawBody = require('raw-body')
 require('dotenv').config()
+const app = express();
+
+const {createClient} = require('@supabase/supabase-js')
+
+const supabaseUrl = 'https://oskbyxzffucaainswhzk.supabase.co'
+const supabaseKey = process.env.SUPABASE_KEY
+const supabase = createClient(supabaseUrl, supabaseKey)
 
 const corsOptions ={
    origin:'*', 
    credentials:true,            
    optionSuccessStatus:200,
 }
+const port = 8080;
+app.use(cors(corsOptions));
+app.use(express.static('static'));
 
-const getRawBody = require('raw-body')
+const server = http.createServer(app);
+
+/*
+const { Server } = require("socket.io");
+const io = new Server(server, {
+  cors: {
+    origin: "http://localhost:3000"
+  }
+});
+*/
 
 const MUMBAI_RPC = process.env.MUMBAI_RPC
 const MUMBAI_CONTRACT = "0x46Fd04eEa588a3EA7e9F055dd691C688c4148ab3"
 const CALLBACK_HOST = process.env.CALLBACK_HOST
 const CLIENT_WEBHOOK = process.env.CLIENT_WEBHOOK
-
-const app = express();
-app.use(cors(corsOptions));
-const port = 8080;
-
-app.use(express.static('static'));
 
 app.get("/api/sign-in", (req, res) => {
     console.log('get Auth Request');
@@ -34,11 +48,28 @@ app.post("/api/callback", (req, res) => {
     Callback(req,res);
 });
 
-app.listen(port, () => {
-    console.log('server running on port 8080');
+server.listen(port, () => {
+  console.log('listening on *:8080');
 });
 
+/*
+io.on('connection', (socket) => {
+  console.log('a user connected');
+});
+*/
+
 const requestMap = new Map();
+
+
+async function Add() {
+  const { data, error } = await supabase
+  .from('eth-pid-map')
+  .insert([
+    { polygon_id: "5005" }
+  ])
+  console.log(data)
+  console.log(error)
+}
 
 async function GetAuthRequest(req,res) {
   // Audience is verifier id
@@ -129,13 +160,21 @@ async function Callback(req,res) {
 
   //console.log(authResponse)
 
+  /*
   axios.post(CLIENT_WEBHOOK, authResponse)
   .then((res) => {
       console.log(`Status: ${res.status}`);
   }).catch((err) => {
       console.error(err);
   });
+  */
 
+  // store polygon id
+  const { data, error } = await supabase
+    .from('eth-pid-map')
+    .insert([{ polygon_id: authResponse.from }])
+  console.log(data)
+  console.log(error)
 
   return res.status(200).send("user with ID: " + authResponse.from + " Succesfully authenticated");
 }
