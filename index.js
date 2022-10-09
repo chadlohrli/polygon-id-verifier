@@ -16,6 +16,7 @@ const getRawBody = require('raw-body')
 const MUMBAI_RPC = process.env.MUMBAI_RPC
 const MUMBAI_CONTRACT = "0x46Fd04eEa588a3EA7e9F055dd691C688c4148ab3"
 const CALLBACK_HOST = process.env.CALLBACK_HOST
+const CLIENT_WEBHOOK = process.env.CLIENT_WEBHOOK
 
 const app = express();
 app.use(cors(corsOptions));
@@ -125,17 +126,16 @@ async function Callback(req,res) {
     console.log(error)
     return res.status(500).send(error);
   }
-  console.log(authResponse)
 
-  /*
-  axios.post('http://localhost:3000/api/callback', authResponse)
+  //console.log(authResponse)
+
+  axios.post(CLIENT_WEBHOOK, authResponse)
   .then((res) => {
       console.log(`Status: ${res.status}`);
-      console.log('Student Info: ', res.data);
   }).catch((err) => {
       console.error(err);
   });
-  */
+
 
   return res.status(200).send("user with ID: " + authResponse.from + " Succesfully authenticated");
 }
